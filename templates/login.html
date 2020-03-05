@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <!-- bootsrap 环境 -->
+    <link rel="stylesheet" href="{% static 'bs/css/bootstrap.min.css' %}">
+    <script src="{% static 'bs/js/jquery.min1.11.3.js' %}"></script>
+    <script src="{% static 'bs/js/bootstrap.min.js' %}"></script>
+    <!-- jqgird 环境 -->
+    <link rel="stylesheet" href="{% static 'jqgrid/css/trirand/ui.jqgrid-bootstrap.css' %}">
+    <script src="{% static 'jqgrid/js/trirand/src/jquery.jqGrid.js' %}"></script>
+    <script src="{% static 'jqgrid/js/trirand/i18n/grid.locale-cn.js' %}"></script>
+    <script>
+        $(function () {
+            // flag 表示输入的手机号是否合法， 初始为0（不合法）
+            var flag = 0;
+
+            // 前端验证手机号码是否合法
+            $('#mobile').blur(function () {
+                let mobile = $('#mobile').val();
+                if(!(/^1[3456789]\d{9}$/.test(mobile))){
+                    alert("手机号码有误，请重填");
+                    flag = 0;
+                } else {
+                    flag = 1;
+                }
+            });
+
+            // 获取验证码
+            $('#forcode').click(function () {
+                if (flag === 0) {
+                    alert('请输入手机号');
+                } else {
+                    let mobile = $('#mobile').val();
+                    {#alert(mobile)#}
+                    $.ajax({
+                        url: '{% url 'index:get_code' %}',
+                        type: 'post',
+                        data: 'mobile=' + mobile,
+                        success: function (response) {
+                            console.log(response, typeof response);
+                            if (!response) {
+                                alert('手机号输入有误')
+                            } else {
+                                let btn = $('#forcode');
+                                let num = 60, str = 's重新获取验证码';
+                                btn.val(num + str);
+                                btn.attr('disabled', 'disabled');
+                                let settime = setInterval(function () {
+                                    num --;
+                                    {#alert(num);#}
+                                    if (num === 0) {
+                                        clearInterval(settime);
+                                        btn.val('免费获取验证码');
+                                        btn.removeAttr('disabled')
+                                    } else {
+                                        btn.val(num + str);
+                                    }
+                                }, 1000)
+                            }
+                        }
+                    })
+                }
+            });
+        });
+
+
+        // code_flag 表示输入的手机号是否合法， 初始为0（不合法）
+        var code_flag = 0;
+
+        // 判断用户输入验证码是否合法
+        function code1 (t) {
+            let code = t.val();
+            if (code.length === 6) {
+                code_flag = 1;
+            } else {
+                code_flag = 0;
+            }
+        }
+
+
+        // 将验证码发送到后端进行验证
+        function send_form () {
+            if (code_flag === 1) {
+                let params = $('#loginForm').serialize();
+                console.log(params);
+                $.ajax({
+                    url: '{% url 'index:test_captcha' %}',
+                    type: 'post',
+                    data: params,
+                    success: function (resp) {
+                        {#alert(resp);#}
+                        if (resp !== '0') {
+                            {#alert(1);#}
+                            location.href = '{% url 'index:index' %}';
+                        } else {
+                            {#alert(0);#}
+                            alert('验证码输入有误，请重新输入');
+                        }
+                    }
+                })
+            } else {
+                alert('验证码输入有误，请重新输入')
+            }
+        }
+    </script>
+</head>
+<body>
+
+
+{#登录页面#}
+<div class="container">
+    <div class="form-group">
+        <div class="col-lg-10">
+            <form id="loginForm" role="form" action="" method="post" class="form-horizontal">
+
+                <label for="mobile" class="">手机号码:</label>
+                <div class="input-group m-bot15">
+                    <input type="text" class="form-control" required id="mobile" name="mobile" placeholder="手机号码" maxlength="11">
+                    <span class="input-group-btn">
+                         <input type="button" id="forcode" value="免费获取验证码"
+                                class="btn btn-success">
+                        </span>
+                </div>
+                <span id="msgDiv"></span>
+                <p class="help-block">请填写绑定手机号</p>
+                <label for="basic-url" class="">用户名</label>
+                <div class="input-group">
+                    <input type="text" class="form-control" id="basic-url" minlength="5" name="name" required>
+                    <span class="input-group-addon">没啥用</span>
+                </div>
+                <label for="basic-url" class="">验证码：</label>
+                <div class="input-group">
+                    <input type="text" class="form-control" id="basic-url" required name="code" maxlength="6" onblur="code1($(this))">
+                </div>
+                <p class="help-block"></p>
+                <div class="input-group">
+                    <input class="btn btn-success" type="button" id="loginButtonId" value="登录" onclick="send_form()">
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+
+
+</body>
+</html>
